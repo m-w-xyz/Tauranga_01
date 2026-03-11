@@ -103,6 +103,12 @@
         gap: 0.25rem;
       }
 
+      .control-group.divider-top {
+        border-top: 1px solid #333;
+        padding-top: 0.5rem;
+        margin-top: 0.5rem;
+      }
+
       .controls label {
         font-size: 11px;
         text-transform: uppercase;
@@ -328,6 +334,10 @@
           />
           <div class="slider-value" id="textSizeValue">1x</div>
         </div>
+        <label class="check-row">
+          <input type="checkbox" id="textFillCheck" />
+          Fill
+        </label>
       </div>
 
       <div class="control-group">
@@ -426,6 +436,8 @@
       <div class="control-group">
         <label>Motion pattern</label>
         <div class="motion-buttons">
+          <button type="button" class="motion-btn small" data-motion="ebb">Ebb</button>
+          <button type="button" class="motion-btn small" data-motion="flow">Flow</button>
           <button type="button" class="motion-btn small" data-motion="swell">Swell</button>
           <button type="button" class="motion-btn small" data-motion="crest">Crest</button>
           <button type="button" class="motion-btn small" data-motion="surge">Surge</button>
@@ -433,16 +445,7 @@
           <button type="button" class="motion-btn motion-btn-none small" data-motion="none">None</button>
         </div>
       </div>
-      <div class="button-row">
-        <button id="pauseBtn" class="small">Pause</button>
-        <button id="resetBtn" class="small">Reset</button>
-        <button id="randomiseBtn" class="small">Randomise</button>
-      </div>
-      <div class="button-row">
-        <button id="downloadBtn" class="small">Save PNG</button>
-      </div>
-
-      <div class="control-group">
+      <div class="control-group divider-top">
         <div class="label-row">
           <label>Image</label>
           <button id="clearImageBtn" class="small" style="display:none">Clear</button>
@@ -465,7 +468,7 @@
         </div>
       </div>
 
-      <div class="control-group">
+      <div class="control-group divider-top">
         <label class="check-row">
           <input type="checkbox" id="baselineCheck" />
           Show baseline
@@ -510,6 +513,17 @@
           <button type="button" class="audio-band-btn small" data-band="high">High</button>
         </div>
       </div>
+
+      <div class="control-group divider-top">
+        <div class="button-row">
+          <button id="pauseBtn" class="small">Pause</button>
+          <button id="resetBtn" class="small">Reset</button>
+          <button id="randomiseBtn" class="small">Randomise</button>
+        </div>
+        <div class="button-row">
+          <button id="downloadBtn" class="small">Save PNG</button>
+        </div>
+      </div>
     </div>
     <div class="canvas-wrap">
       <canvas id="canvas"></canvas>
@@ -543,6 +557,7 @@
       const shapeButtonsContainer = document.getElementById("shapeButtons");
       const textSizeSlider = document.getElementById("textSizeSlider");
       const textSizeValue = document.getElementById("textSizeValue");
+      const textFillCheck = document.getElementById("textFillCheck");
       const uploadImageBtn = document.getElementById("uploadImageBtn");
       const imageFileInput = document.getElementById("imageFileInput");
       const clearImageBtn = document.getElementById("clearImageBtn");
@@ -577,6 +592,7 @@
       let angleRad = 0; // cached radians
       let fullGrid = false; // when true, ignore text mask
       let textScale = 10;
+      let textFill = false;
       let motionPatternBeforeWebcam = "crest"; // restored when webcam turns off
 
       let bgImage = null;
@@ -712,7 +728,7 @@
         const leadingRatio = 1.0;
         const getLineHeight = (fs) => fs * leadingRatio;
 
-        const scaleFraction = textScale / 10;
+        const scaleFraction = textFill ? 1 : textScale / 10;
         const maxHeight = height * 0.85 * scaleFraction;
         const maxWidth = width * 0.9 * scaleFraction;
         let fontSize = height * 0.85;
@@ -994,8 +1010,19 @@
           const ry = x * sinA + y * cosA;
 
           let phase;
+          let motionYOffset = 0;
+          let motionXOffset = 0;
           switch (motionPattern) {
             case "crest": phase = t * 0.6 + ry * 0.05 * waveFrequency; break;
+            case "ebb":
+              // crest-like, but rotated 90° by using rx instead of ry
+              phase = t * 0.6 + rx * 0.05 * waveFrequency;
+              motionXOffset = Math.sin(phase) * tileSize * 0.4;
+              break;
+            case "flow":
+              phase = t * 0.6 + (y - height / 2) * 0.05 * waveFrequency;
+              motionYOffset = Math.sin(phase) * tileSize * 0.6;
+              break;
             case "storm": { const n = stormNoise(rx * waveFrequency, ry * waveFrequency, t * 0.35); phase = n * Math.PI * 2; break; }
             case "surge": phase = t * 0.8 + Math.sin(rx * 0.06 * waveFrequency) * 0.8 + Math.cos(ry * 0.06 * waveFrequency) * 0.8; break;
             case "none": phase = 0; break;
@@ -1023,8 +1050,8 @@
 
           const baseX = x + (cellWidth - drawWidth) / 2;
           const baseY = y + (cellHeight - drawHeight) / 2;
-          let anchorX = baseX + drawWidth / 2 + dispX;
-          let anchorY = baseY + drawHeight + dispY;
+          let anchorX = baseX + drawWidth / 2 + dispX + motionXOffset;
+          let anchorY = baseY + drawHeight + dispY + motionYOffset;
 
           ctx.save();
           ctx.translate(anchorX, anchorY);
@@ -1160,12 +1187,13 @@
         angleDeg = Number(angleSlider.value) || 0;
         angleRad = (angleDeg * Math.PI) / 180;
         textScale = Number(textSizeSlider.value) || 1;
+        textFill = !!(textFillCheck && textFillCheck.checked);
         spacingValue.textContent = String(gapX);
         sizeValue.textContent = String(tileSize);
         speedValue.textContent = tideSpeed.toFixed(2);
         frequencyValue.textContent = waveFrequency.toFixed(2);
         angleValue.textContent = `${angleDeg}°`;
-        textSizeValue.textContent = `${textScale}x`;
+        textSizeValue.textContent = textFill ? "Fill" : `${textScale}x`;
 
         updateSliderThumb(spacingSlider, spacingValue);
         updateSliderThumb(sizeSlider, sizeValue);
@@ -1244,6 +1272,13 @@
         updateFromControls();
         render(accumulatedTime);
       });
+
+      if (textFillCheck) {
+        textFillCheck.addEventListener("change", () => {
+          updateFromControls();
+          render(accumulatedTime);
+        });
+      }
 
       function setMotionActive(value) {
         motionBtns.forEach((btn) => {
@@ -1541,6 +1576,7 @@
         waveFrequency = 0.15;
         angleDeg = 0;
         textScale = 10;
+        textFill = false;
         fullGrid = false;
         currentShape = "surge";
         isPaused = false;
@@ -1551,6 +1587,7 @@
         frequencySlider.value = String(waveFrequency * 100);
         angleSlider.value = String(angleDeg);
         textSizeSlider.value = String(textScale);
+        if (textFillCheck) textFillCheck.checked = false;
         setMotionActive(motionPattern);
         fullGridBtn.classList.remove("toggle-on");
         document.querySelectorAll(".shape-btn").forEach((b) =>
@@ -1603,10 +1640,11 @@
         spacingSlider.value = String(spacing);
         sizeSlider.value = String(size);
         textSizeSlider.value = String(randInt(3, 10));
+        if (textFillCheck) textFillCheck.checked = true;
         speedSlider.value = String(randInt(0, 200));
         frequencySlider.value = String(randInt(5, 200));
         angleSlider.value = String(randInt(0, 360));
-        const motions = ["swell", "crest", "surge", "storm", "none"];
+        const motions = ["ebb", "flow", "swell", "crest", "surge", "storm", "none"];
         motionPattern = motions[randInt(0, motions.length - 1)];
         setMotionActive(motionPattern);
         currentShape = SHAPE_KEYS[randInt(0, SHAPE_KEYS.length - 1)];
@@ -1643,6 +1681,7 @@
         spacingSlider.value = String(gapX);
         sizeSlider.value = String(tileSize);
         textSizeSlider.value = String(textScale);
+        textFill = !!(textFillCheck && textFillCheck.checked);
         speedSlider.value = String(tideSpeed * 100);
         frequencySlider.value = String(waveFrequency * 100);
         angleSlider.value = String(angleDeg);
