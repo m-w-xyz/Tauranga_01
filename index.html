@@ -392,6 +392,19 @@
       </div>
 
       <div class="control-group divider-top">
+        <label>Motion pattern</label>
+        <div class="motion-buttons">
+          <button type="button" class="motion-btn small" data-motion="ebb">Ebb</button>
+          <button type="button" class="motion-btn small" data-motion="flow">Flow</button>
+          <button type="button" class="motion-btn small" data-motion="swell">Swell</button>
+          <button type="button" class="motion-btn small" data-motion="crest">Crest</button>
+          <button type="button" class="motion-btn small" data-motion="surge">Surge</button>
+          <button type="button" class="motion-btn small" data-motion="storm">Storm</button>
+          <button type="button" class="motion-btn motion-btn-none small" data-motion="none">None</button>
+        </div>
+      </div>
+
+      <div class="control-group">
         <label for="speedSlider">
           Speed
         </label>
@@ -437,19 +450,6 @@
           <div class="slider-value" id="angleValue">0°</div>
         </div>
       </div>
-
-      <div class="control-group">
-        <label>Motion pattern</label>
-        <div class="motion-buttons">
-          <button type="button" class="motion-btn small" data-motion="ebb">Ebb</button>
-          <button type="button" class="motion-btn small" data-motion="flow">Flow</button>
-          <button type="button" class="motion-btn small" data-motion="swell">Swell</button>
-          <button type="button" class="motion-btn small" data-motion="crest">Crest</button>
-          <button type="button" class="motion-btn small" data-motion="surge">Surge</button>
-          <button type="button" class="motion-btn small" data-motion="storm">Storm</button>
-          <button type="button" class="motion-btn motion-btn-none small" data-motion="none">None</button>
-        </div>
-      </div>
       <div class="control-group divider-top">
         <div class="label-row">
           <label>Image</label>
@@ -475,8 +475,8 @@
 
       <div class="control-group divider-top">
         <label class="check-row">
-          <input type="checkbox" id="baselineCheck" />
-          Show baseline
+          <input type="checkbox" id="tidelineCheck" />
+          Show tideline
         </label>
       </div>
 
@@ -528,6 +528,10 @@
         <div class="button-row">
           <button id="downloadBtn" class="small">Save PNG</button>
         </div>
+        <label class="check-row">
+          <input type="checkbox" id="transparentBgCheck" />
+          Transparent background
+        </label>
       </div>
     </div>
     <div class="canvas-wrap">
@@ -571,7 +575,7 @@
       const imgBrightnessValue = document.getElementById("imgBrightnessValue");
       const imgContrastSlider = document.getElementById("imgContrastSlider");
       const imgContrastValue = document.getElementById("imgContrastValue");
-      const baselineCheck = document.getElementById("baselineCheck");
+      const tidelineCheck = document.getElementById("tidelineCheck");
       const uploadAudioBtn = document.getElementById("uploadAudioBtn");
       const audioFileInput = document.getElementById("audioFileInput");
       const clearAudioBtn = document.getElementById("clearAudioBtn");
@@ -586,6 +590,7 @@
       const audioSmoothingValue = document.getElementById("audioSmoothingValue");
       const audioBandBtns = document.querySelectorAll(".audio-band-btn");
       const alternateShapesCheck = document.getElementById("alternateShapesCheck");
+      const transparentBgCheck = document.getElementById("transparentBgCheck");
 
       // Grid + shape configuration (controlled by UI)
       let tileSize = 42; // px (rendered size of the shape)
@@ -601,6 +606,7 @@
       let textFill = false;
       let motionPatternBeforeWebcam = "crest"; // restored when webcam turns off
       let alternateShapes = false;
+      let transparentBackground = false;
 
       let bgImage = null;
       let bgImageData = null;
@@ -611,7 +617,7 @@
       const bgImageCanvas = document.createElement("canvas");
       const bgImageCtx = bgImageCanvas.getContext("2d");
 
-      let showBaseline = false;
+      let showTideline = false;
 
       let audioCtx = null;
       let audioSource = null;
@@ -912,8 +918,10 @@
           : -1;
 
         ctx.clearRect(0, 0, width, height);
-        ctx.fillStyle = "black";
-        ctx.fillRect(0, 0, width, height);
+        if (!transparentBackground) {
+          ctx.fillStyle = "black";
+          ctx.fillRect(0, 0, width, height);
+        }
 
         if (webcamActive && webcamVideo.readyState >= 2) {
           webcamCanvas.width = w2;
@@ -1072,13 +1080,13 @@
           scale *= 1 + pathStrength * HAND_SCALE_BOOST;
 
           const baseX = x + (cellWidth - drawWidth) / 2;
-          const baseY = y + (cellHeight - drawHeight) / 2;
+          const baseY = y + cellHeight;
           const gx = Math.floor((x - gapX) / cellWidth);
           const gy = Math.floor((y - gapY) / cellHeight);
           const isFlipped = alternateShapes && ((gx + gy) % 2 === 1);
 
           let anchorX = baseX + drawWidth / 2 + dispX + motionXOffset;
-          let anchorY = baseY + drawHeight + dispY + motionYOffset;
+          let anchorY = baseY + dispY + motionYOffset;
 
           ctx.save();
           ctx.translate(anchorX, anchorY);
@@ -1092,9 +1100,9 @@
           }
           ctx.restore();
 
-          if (showBaseline) {
+          if (showTideline) {
             ctx.save();
-            ctx.strokeStyle = "rgba(255,255,255,0.25)";
+            ctx.strokeStyle = "#ffffff";
             ctx.lineWidth = 1;
             const lineY = Math.round(y + cellHeight) - 0.5;
             ctx.beginPath();
@@ -1315,6 +1323,13 @@
         });
       }
 
+      if (transparentBgCheck) {
+        transparentBgCheck.addEventListener("change", () => {
+          transparentBackground = !!transparentBgCheck.checked;
+          render(accumulatedTime);
+        });
+      }
+
       function setMotionActive(value) {
         motionBtns.forEach((btn) => {
           btn.classList.toggle("toggle-on", btn.dataset.motion === value);
@@ -1447,8 +1462,8 @@
         }
       });
 
-      baselineCheck.addEventListener("change", () => {
-        showBaseline = baselineCheck.checked;
+      tidelineCheck.addEventListener("change", () => {
+        showTideline = tidelineCheck.checked;
         render(accumulatedTime);
       });
 
@@ -1613,6 +1628,7 @@
         textScale = 10;
         textFill = false;
         alternateShapes = false;
+        transparentBackground = false;
         fullGrid = false;
         currentShape = "surge";
         isPaused = false;
@@ -1625,6 +1641,7 @@
         textSizeSlider.value = String(textScale);
         if (textFillCheck) textFillCheck.checked = false;
         if (alternateShapesCheck) alternateShapesCheck.checked = false;
+        if (transparentBgCheck) transparentBgCheck.checked = false;
         setMotionActive(motionPattern);
         fullGridBtn.classList.remove("toggle-on");
         document.querySelectorAll(".shape-btn").forEach((b) =>
@@ -1657,8 +1674,8 @@
         clearAudioBtn.style.display = "none";
         audioLoopBtn.classList.remove("toggle-on");
         audioBandBtns.forEach((b) => b.classList.toggle("toggle-on", b.dataset.band === "all"));
-        showBaseline = false;
-        baselineCheck.checked = false;
+        showTideline = false;
+        tidelineCheck.checked = false;
         if (webcamActive) {
           toggleWebcam();
         }
