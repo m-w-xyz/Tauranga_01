@@ -15,22 +15,28 @@
         padding: 0;
       }
  
+      html {
+        height: 100%;
+      }
+
       body {
         background: #000;
         color: #fff;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
           sans-serif;
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
+        min-height: 100%;
+        min-height: 100dvh;
+        overflow: hidden;
       }
 
+      /* Full-viewport canvas; control panel is layered above and does not affect centering */
       .controls {
         position: fixed;
         top: 0;
         right: 0;
         height: auto;
         max-height: 100vh;
+        max-height: 100dvh;
         width: 260px;
         padding: 0.75rem 0.75rem 1rem;
         background: #1a1a1a;
@@ -128,7 +134,10 @@
         color: #000;
       }
 
-      .controls input[type="text"] {
+      .controls #textInput {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
         padding: 0.5rem 0.75rem;
         border-radius: 0;
         border: none;
@@ -136,9 +145,16 @@
         color: #f5f5f5;
         font: inherit;
         outline: none;
+        text-align: center;
+        resize: vertical;
+        min-height: 3.25rem;
+        line-height: 1.35;
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+        word-break: break-word;
       }
 
-      .controls input[type="text"]::placeholder {
+      .controls #textInput::placeholder {
         color: #666;
       }
 
@@ -233,6 +249,10 @@
         filter: none;
       }
 
+      .shape-buttons .shape-btn.shape-hidden {
+        display: none;
+      }
+
       .upload-row {
         display: flex;
         flex-direction: column;
@@ -279,8 +299,9 @@
       }
 
       .canvas-wrap {
-        position: relative;
-        flex: 1;
+        position: fixed;
+        inset: 0;
+        z-index: 1;
       }
 
       canvas {
@@ -311,14 +332,28 @@
           <button id="fullGridBtn" class="small">Full grid</button>
           <button id="webcamBtn" class="small">Webcam</button>
         </div>
-        <input
+        <textarea
           id="textInput"
-          type="text"
-          maxlength="40"
+          rows="3"
+          maxlength="400"
           spellcheck="false"
           autocomplete="off"
+          wrap="soft"
           placeholder="Type here…"
-        />
+        >TAU
+RA
+NGA</textarea>
+        <div class="upload-row font-upload-row">
+          <button type="button" class="upload-btn" id="uploadFontBtn">Upload font</button>
+          <input
+            type="file"
+            id="fontFileInput"
+            accept=".woff2,.woff,.ttf,.otf"
+            style="display: none"
+          />
+          <button type="button" class="upload-btn" id="clearFontBtn" hidden>Use default font</button>
+          <span class="upload-hint" id="fontStatusHint"></span>
+        </div>
       </div>
 
       <div class="control-group">
@@ -332,28 +367,54 @@
             step="1"
             value="10"
           />
-          <div class="slider-value" id="textSizeValue">1x</div>
+          <div class="slider-value" id="textSizeValue">10x</div>
         </div>
-        <label class="check-row">
-          <input type="checkbox" id="textFillCheck" />
-          Fill
-        </label>
+      </div>
+
+      <div class="control-group">
+        <label for="textLineSpacingSlider">Line spacing</label>
+        <div class="slider-row">
+          <input
+            id="textLineSpacingSlider"
+            type="range"
+            min="50"
+            max="125"
+            step="1"
+            value="80"
+          />
+          <div class="slider-value" id="textLineSpacingValue">80%</div>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label for="letterSpacingSlider">Letter spacing</label>
+        <div class="slider-row">
+          <input
+            id="letterSpacingSlider"
+            type="range"
+            min="-50"
+            max="100"
+            step="1"
+            value="0"
+          />
+          <div class="slider-value" id="letterSpacingValue">0</div>
+        </div>
       </div>
 
       <div class="control-group">
         <label for="spacingSlider">
-          Grid spacing:
+          Grid spacing (px):
         </label>
         <div class="slider-row">
           <input
             id="spacingSlider"
             type="range"
-            min="-10"
-            max="30"
+            min="0"
+            max="20"
             step="1"
             value="0"
           />
-          <div class="slider-value" id="spacingValue">0</div>
+          <div class="slider-value" id="spacingValue">0px</div>
         </div>
       </div>
 
@@ -366,26 +427,26 @@
             min="8"
             max="100"
             step="1"
-            value="42"
+            value="17"
           />
-          <div class="slider-value" id="sizeValue">15</div>
+          <div class="slider-value" id="sizeValue">17</div>
         </div>
       </div>
 
       <div class="control-group divider-top">
         <label>Shape</label>
         <div class="shape-buttons" id="shapeButtons">
-          <button type="button" class="shape-btn" data-shape="semi-circle" title="Semi-circle"><img src="./assets/semi-circle.svg" alt="Semi-circle" /></button>
-          <button type="button" class="shape-btn" data-shape="low" title="Low"><img src="./assets/low.svg" alt="Low" /></button>
-          <button type="button" class="shape-btn toggle-on" data-shape="surge" title="Surge"><img src="./assets/surge.svg" alt="Surge" /></button>
-          <button type="button" class="shape-btn" data-shape="flat" title="Flat"><img src="./assets/flat.svg" alt="Flat" /></button>
-          <button type="button" class="shape-btn" data-shape="barrel" title="Barrel"><img src="./assets/barrel.svg" alt="Barrel" /></button>
+          <button type="button" class="shape-btn shape-hidden" data-shape="semi-circle" title="Semi-circle"><img src="./assets/semi-circle.svg" alt="Semi-circle" /></button>
+          <button type="button" class="shape-btn shape-hidden" data-shape="low" title="Low"><img src="./assets/low.svg" alt="Low" /></button>
+          <button type="button" class="shape-btn shape-hidden" data-shape="surge" title="Surge"><img src="./assets/surge.svg" alt="Surge" /></button>
+          <button type="button" class="shape-btn shape-hidden" data-shape="flat" title="Flat"><img src="./assets/flat.svg" alt="Flat" /></button>
+          <button type="button" class="shape-btn toggle-on" data-shape="barrel" title="Barrel"><img src="./assets/barrel.svg" alt="Barrel" /></button>
         </div>
         <div class="upload-row">
           <button type="button" class="upload-btn" id="uploadSvgBtn">Upload SVG</button>
           <input type="file" id="svgFileInput" accept=".svg,image/svg+xml" style="display:none" />
           <label class="check-row">
-            <input type="checkbox" id="alternateShapesCheck" />
+            <input type="checkbox" id="alternateShapesCheck" checked />
             Alternate shapes
           </label>
         </div>
@@ -394,10 +455,10 @@
       <div class="control-group divider-top">
         <label>Motion pattern</label>
         <div class="motion-buttons">
+          <button type="button" class="motion-btn small" data-motion="crest">Crest</button>
           <button type="button" class="motion-btn small" data-motion="ebb">Ebb</button>
           <button type="button" class="motion-btn small" data-motion="flow">Flow</button>
           <button type="button" class="motion-btn small" data-motion="swell">Swell</button>
-          <button type="button" class="motion-btn small" data-motion="crest">Crest</button>
           <button type="button" class="motion-btn small" data-motion="surge">Surge</button>
           <button type="button" class="motion-btn small" data-motion="storm">Storm</button>
           <button type="button" class="motion-btn motion-btn-none small" data-motion="none">None</button>
@@ -453,7 +514,7 @@
       <div class="control-group divider-top">
         <div class="label-row">
           <label>Image</label>
-          <button id="clearImageBtn" class="small" style="display:none">Clear</button>
+          <button id="clearImageBtn" class="small" style="display:none">Clear Image</button>
         </div>
         <div class="upload-row">
           <button type="button" class="upload-btn" id="uploadImageBtn">Upload Image</button>
@@ -471,19 +532,16 @@
           <input id="imgContrastSlider" type="range" min="-100" max="100" step="1" value="0" />
           <div class="slider-value" id="imgContrastValue">0</div>
         </div>
-      </div>
-
-      <div class="control-group divider-top">
         <label class="check-row">
-          <input type="checkbox" id="tidelineCheck" />
-          Show tideline
+          <input type="checkbox" id="invertImageCheck" />
+          Invert image
         </label>
       </div>
 
-      <div class="control-group">
+      <div class="control-group divider-top">
         <div class="label-row">
           <label>Audio</label>
-          <button id="clearAudioBtn" class="small" style="display:none">Clear</button>
+          <button id="clearAudioBtn" class="small" style="display:none">Clear Audio</button>
         </div>
         <div class="upload-row">
           <button type="button" class="upload-btn" id="uploadAudioBtn">Upload Audio</button>
@@ -497,18 +555,23 @@
         </div>
         <label for="audioVolumeSlider">Volume</label>
         <div class="slider-row">
-          <input id="audioVolumeSlider" type="range" min="0" max="100" step="1" value="80" />
-          <div class="slider-value" id="audioVolumeValue">80</div>
+          <input id="audioVolumeSlider" type="range" min="0" max="100" step="1" value="50" />
+          <div class="slider-value" id="audioVolumeValue">50</div>
         </div>
         <label for="audioAmpSlider">Amplitude</label>
         <div class="slider-row">
-          <input id="audioAmpSlider" type="range" min="0" max="100" step="1" value="50" />
-          <div class="slider-value" id="audioAmpValue">50</div>
+          <input id="audioAmpSlider" type="range" min="0" max="200" step="1" value="200" />
+          <div class="slider-value" id="audioAmpValue">200</div>
         </div>
         <label for="audioSmoothing">Smoothing</label>
         <div class="slider-row">
-          <input id="audioSmoothing" type="range" min="0" max="99" step="1" value="75" />
-          <div class="slider-value" id="audioSmoothingValue">75</div>
+          <input id="audioSmoothing" type="range" min="0" max="99" step="1" value="85" />
+          <div class="slider-value" id="audioSmoothingValue">85</div>
+        </div>
+        <label>Visualisation</label>
+        <div class="motion-buttons">
+          <button type="button" class="audio-vis-btn small toggle-on" data-vis="waveform">Waveform</button>
+          <button type="button" class="audio-vis-btn small" data-vis="tide">Tide</button>
         </div>
         <label>Frequency band</label>
         <div class="motion-buttons">
@@ -561,12 +624,27 @@
       const downloadBtn = document.getElementById("downloadBtn");
       const controlsPanel = document.getElementById("controlsPanel");
       const togglePanelBtn = document.getElementById("toggle-panel");
+
+      const DEFAULT_TEXT = "TAU\nRA\nNGA";
+      const CANVAS_FONT_FALLBACK =
+        'Arial, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      const USER_FONT_FAMILY = "TaurangaUserFont";
+      let userFontFace = null;
+
+      const uploadFontBtn = document.getElementById("uploadFontBtn");
+      const fontFileInput = document.getElementById("fontFileInput");
+      const clearFontBtn = document.getElementById("clearFontBtn");
+      const fontStatusHint = document.getElementById("fontStatusHint");
+
       const uploadSvgBtn = document.getElementById("uploadSvgBtn");
       const svgFileInput = document.getElementById("svgFileInput");
       const shapeButtonsContainer = document.getElementById("shapeButtons");
       const textSizeSlider = document.getElementById("textSizeSlider");
       const textSizeValue = document.getElementById("textSizeValue");
-      const textFillCheck = document.getElementById("textFillCheck");
+      const textLineSpacingSlider = document.getElementById("textLineSpacingSlider");
+      const textLineSpacingValue = document.getElementById("textLineSpacingValue");
+      const letterSpacingSlider = document.getElementById("letterSpacingSlider");
+      const letterSpacingValue = document.getElementById("letterSpacingValue");
       const uploadImageBtn = document.getElementById("uploadImageBtn");
       const imageFileInput = document.getElementById("imageFileInput");
       const clearImageBtn = document.getElementById("clearImageBtn");
@@ -575,7 +653,7 @@
       const imgBrightnessValue = document.getElementById("imgBrightnessValue");
       const imgContrastSlider = document.getElementById("imgContrastSlider");
       const imgContrastValue = document.getElementById("imgContrastValue");
-      const tidelineCheck = document.getElementById("tidelineCheck");
+      const invertImageCheck = document.getElementById("invertImageCheck");
       const uploadAudioBtn = document.getElementById("uploadAudioBtn");
       const audioFileInput = document.getElementById("audioFileInput");
       const clearAudioBtn = document.getElementById("clearAudioBtn");
@@ -593,7 +671,7 @@
       const transparentBgCheck = document.getElementById("transparentBgCheck");
 
       // Grid + shape configuration (controlled by UI)
-      let tileSize = 42; // px (rendered size of the shape)
+      let tileSize = 17; // px (rendered size of the shape)
       let gapX = 0; // horizontal spacing
       let gapY = 0; // vertical spacing
       let tideSpeed = 0.50; // animation speed multiplier
@@ -603,9 +681,11 @@
       let angleRad = 0; // cached radians
       let fullGrid = false; // when true, ignore text mask
       let textScale = 10;
-      let textFill = false;
+      let textLineSpacing = 80; // % of font size; row-to-row distance in mask
+      let letterSpacingPct = 0; // slider -50..100 → letter-spacing in em via /100
       let motionPatternBeforeWebcam = "crest"; // restored when webcam turns off
-      let alternateShapes = false;
+      let fullGridBeforeWebcam = false; // restored when webcam turns off
+      let alternateShapes = true;
       let transparentBackground = false;
 
       let bgImage = null;
@@ -617,8 +697,6 @@
       const bgImageCanvas = document.createElement("canvas");
       const bgImageCtx = bgImageCanvas.getContext("2d");
 
-      let showTideline = false;
-
       let audioCtx = null;
       let audioSource = null;
       let audioAnalyser = null;
@@ -626,10 +704,12 @@
       let audioElement = null;
       let audioFreqData = null;
       let audioEnergy = 0;
-      let audioAmplitude = 0.5;
+      let audioAmplitude = 2.0;
       let audioBand = "all";
       let audioLooping = false;
       let audioTideSmooth = 0;
+      let audioVisMode = "waveform"; // "waveform" | "tide"
+      let audioSpectrumSmooth = null; // Float32Array, smoothed per-bin spectrum
 
       // Webcam brightness + motion masks
       const webcamVideo = document.createElement("video");
@@ -679,7 +759,16 @@
 
       const SHAPE_KEYS = ["semi-circle", "low", "surge", "flat", "barrel"];
       const shapeImages = {};
-      let currentShape = "surge";
+      let currentShape = "barrel";
+
+      function visibleShapeKeys() {
+        const keys = [];
+        document.querySelectorAll(".shape-btn:not(.shape-hidden)").forEach((b) => {
+          const s = b.dataset.shape;
+          if (s && SHAPE_KEYS.includes(s)) keys.push(s);
+        });
+        return keys.length ? keys : SHAPE_KEYS;
+      }
 
       SHAPE_KEYS.forEach((key) => {
         const img = new Image();
@@ -699,16 +788,11 @@
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
 
-      function wrapTextToLines(text, maxChars) {
-        if (!text) return [];
-        const clean = text.trim();
-        if (!clean) return [];
-
-        const words = clean.split(/\s+/);
+      function wrapParagraphToLines(words, maxChars) {
         const lines = [];
         let currentLine = "";
-
         for (const word of words) {
+          if (!word) continue;
           const wouldBe = currentLine ? currentLine + " " + word : word;
           if (currentLine.length === 0) {
             currentLine = word;
@@ -721,6 +805,78 @@
         }
         if (currentLine) lines.push(currentLine);
         return lines;
+      }
+
+      function wrapTextToLines(text, maxChars) {
+        if (!text) return [];
+        const clean = text.trim();
+        if (!clean) return [];
+
+        const paragraphs = clean.split(/\n/);
+        const lines = [];
+        for (const para of paragraphs) {
+          const words = para.trim().split(/\s+/).filter(Boolean);
+          if (words.length === 0) {
+            lines.push("");
+            continue;
+          }
+          lines.push(...wrapParagraphToLines(words, maxChars));
+        }
+        return lines;
+      }
+
+      function fontCssForCanvas(sizePx) {
+        if (userFontFace) {
+          return `bold ${sizePx}px "${USER_FONT_FAMILY}", ${CANVAS_FONT_FALLBACK}`;
+        }
+        return `bold ${sizePx}px ${CANVAS_FONT_FALLBACK}`;
+      }
+
+      function clearUserFont() {
+        if (userFontFace) {
+          try {
+            document.fonts.delete(userFontFace);
+          } catch (_) {}
+          userFontFace = null;
+        }
+        if (input) {
+          input.style.fontFamily = "";
+          input.style.fontWeight = "";
+        }
+        if (clearFontBtn) clearFontBtn.hidden = true;
+        if (fontStatusHint) fontStatusHint.textContent = "";
+      }
+
+      function loadUserFontFromFile(file) {
+        if (!file || !file.size) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const buf = reader.result;
+          (async () => {
+            try {
+              clearUserFont();
+              const face = new FontFace(USER_FONT_FAMILY, buf);
+              await face.load();
+              document.fonts.add(face);
+              userFontFace = face;
+              await document.fonts.ready;
+              const shortName = file.name.replace(/\.[^.]+$/, "").slice(0, 28) || "Custom";
+              if (fontStatusHint) fontStatusHint.textContent = shortName;
+              if (clearFontBtn) clearFontBtn.hidden = false;
+              if (input) {
+                input.style.fontFamily = `"${USER_FONT_FAMILY}", ${CANVAS_FONT_FALLBACK}`;
+                input.style.fontWeight = "700";
+              }
+              updateFromControls();
+              render(accumulatedTime);
+            } catch (err) {
+              console.error(err);
+              if (fontStatusHint) fontStatusHint.textContent = "Could not load font";
+              clearUserFont();
+            }
+          })();
+        };
+        reader.readAsArrayBuffer(file);
       }
 
       function createTextMaskCanvas(text, width, height) {
@@ -738,23 +894,38 @@
         const lines = wrapTextToLines(text, 7);
         if (!lines.length) return offCanvas;
 
-        const leadingRatio = 1.0;
+        const leadingRatio = textLineSpacing / 100;
         const getLineHeight = (fs) => fs * leadingRatio;
 
-        const scaleFraction = textFill ? 1 : textScale / 10;
+        const scaleFraction = textScale / 10;
         const maxHeight = height * 0.85 * scaleFraction;
         const maxWidth = width * 0.9 * scaleFraction;
         let fontSize = height * 0.85;
-        offCtx.textAlign = "center";
-        offCtx.textBaseline = "top";
+        offCtx.textAlign = "left";
+        offCtx.textBaseline = "alphabetic";
+
+        const lsEm = letterSpacingPct / 100;
+        const applyLetterSpacing = () => {
+          offCtx.letterSpacing = lsEm === 0 ? "0px" : `${lsEm}em`;
+        };
+
+        const measureLineWidth = (line) => {
+          const m = offCtx.measureText(line);
+          let w = m.width;
+          if (lsEm !== 0 && line.length > 0) {
+            const trailingSpace = Math.abs(lsEm) * fontSize;
+            w = Math.max(0, w - trailingSpace);
+          }
+          return w;
+        };
 
         while (fontSize > 10) {
-          offCtx.font = `bold ${fontSize}px Arial, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+          offCtx.font = fontCssForCanvas(fontSize);
+          applyLetterSpacing();
 
           let maxLineWidth = 0;
           for (const line of lines) {
-            const metrics = offCtx.measureText(line);
-            maxLineWidth = Math.max(maxLineWidth, metrics.width);
+            maxLineWidth = Math.max(maxLineWidth, measureLineWidth(line));
           }
 
           const lineHeight = getLineHeight(fontSize);
@@ -767,13 +938,23 @@
         }
 
         const lineHeight = getLineHeight(fontSize);
-        const totalTextHeight = (lines.length - 1) * lineHeight + fontSize;
-        const verticalNudge = fontSize * 0.15;
-        const startY = height / 2 - totalTextHeight / 2 + verticalNudge;
+
+        offCtx.font = fontCssForCanvas(fontSize);
+        applyLetterSpacing();
+
+        const metrics = offCtx.measureText("Hg");
+        const ascent = metrics.actualBoundingBoxAscent || fontSize * 0.75;
+        const descent = metrics.actualBoundingBoxDescent || fontSize * 0.25;
+        const glyphHeight = ascent + descent;
+
+        const totalTextHeight = (lines.length - 1) * lineHeight + glyphHeight;
+        const startBaseline = height / 2 - totalTextHeight / 2 + ascent;
 
         offCtx.fillStyle = "white";
         lines.forEach((line, index) => {
-          offCtx.fillText(line, width / 2, startY + index * lineHeight);
+          const lw = measureLineWidth(line);
+          const lx = (width - lw) / 2;
+          offCtx.fillText(line, lx, startBaseline + index * lineHeight);
         });
         return offCanvas;
       }
@@ -798,7 +979,14 @@
         bgImageCtx.fillRect(0, 0, canvasW, canvasH);
         const iw = bgImage.naturalWidth;
         const ih = bgImage.naturalHeight;
-        const scale = Math.max(canvasW / iw, canvasH / ih);
+        if (!iw || !ih) {
+          bgImageData = null;
+          bgImageW = canvasW;
+          bgImageH = canvasH;
+          return;
+        }
+        /* contain: entire image visible inside viewport (letterboxed), never cropped */
+        const scale = Math.min(canvasW / iw, canvasH / ih);
         const dw = iw * scale;
         const dh = ih * scale;
         const dx = (canvasW - dw) / 2;
@@ -808,13 +996,16 @@
         const frame = bgImageCtx.getImageData(0, 0, canvasW, canvasH);
         const d = frame.data;
         const contrastFactor = (259 * (imgContrast + 255)) / (255 * (259 - imgContrast));
+        const invertLum = invertImageCheck && invertImageCheck.checked;
         const lum = new Float32Array(canvasW * canvasH);
         for (let i = 0, p = 0; i < d.length; i += 4, p++) {
           let r = d[i], g = d[i + 1], b = d[i + 2];
           r = Math.min(255, Math.max(0, contrastFactor * (r - 128) + 128 + imgBrightness));
           g = Math.min(255, Math.max(0, contrastFactor * (g - 128) + 128 + imgBrightness));
           b = Math.min(255, Math.max(0, contrastFactor * (b - 128) + 128 + imgBrightness));
-          lum[p] = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
+          let l = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
+          if (invertLum) l = 1 - l;
+          lum[p] = l;
         }
         bgImageData = lum;
         bgImageW = canvasW;
@@ -835,6 +1026,37 @@
         return (sum / ((end - start) * 255));
       }
 
+      function updateAudioSpectrum() {
+        if (!audioAnalyser || !audioFreqData) { audioSpectrumSmooth = null; return; }
+        audioAnalyser.getByteFrequencyData(audioFreqData);
+        const len = audioFreqData.length;
+        if (!audioSpectrumSmooth || audioSpectrumSmooth.length !== len) {
+          audioSpectrumSmooth = new Float32Array(len);
+        }
+        const rise = 0.35;
+        const fall = 0.08;
+        for (let i = 0; i < len; i++) {
+          const target = audioFreqData[i] / 255;
+          const rate = target > audioSpectrumSmooth[i] ? rise : fall;
+          audioSpectrumSmooth[i] += (target - audioSpectrumSmooth[i]) * rate;
+        }
+      }
+
+      function getSpectrumAt(ratio) {
+        if (!audioSpectrumSmooth) return 0;
+        const len = audioSpectrumSmooth.length;
+        let start = 0, end = len;
+        if (audioBand === "bass") { start = 0; end = Math.floor(len * 0.15); }
+        else if (audioBand === "mid") { start = Math.floor(len * 0.15); end = Math.floor(len * 0.55); }
+        else if (audioBand === "high") { start = Math.floor(len * 0.55); end = len; }
+        if (end <= start) return 0;
+        const idx = start + ratio * (end - start - 1);
+        const lo = Math.floor(idx);
+        const hi = Math.min(lo + 1, end - 1);
+        const frac = idx - lo;
+        return audioSpectrumSmooth[lo] * (1 - frac) + audioSpectrumSmooth[hi] * frac;
+      }
+
       let accumulatedTime = 0;
       let lastFrameTimestamp = 0;
       let isPaused = false;
@@ -847,9 +1069,13 @@
           webcamStream = null;
           webcamActive = false;
           webcamData = null;
+          webcamMotion = null;
+          prevWebcamData = null;
+          handPathBuffer = null;
+          handPathSmooth = null;
           webcamBtn.textContent = "Webcam";
-          fullGrid = false;
-          fullGridBtn.classList.remove("toggle-on");
+          fullGrid = fullGridBeforeWebcam;
+          fullGridBtn.classList.toggle("toggle-on", fullGrid);
           motionPattern = motionPatternBeforeWebcam;
           setMotionActive(motionPattern);
           render(accumulatedTime);
@@ -880,6 +1106,7 @@
           webcamActive = true;
           webcamBtn.textContent = "Webcam On";
           motionPatternBeforeWebcam = motionPattern;
+          fullGridBeforeWebcam = fullGrid;
           motionPattern = "none";
           setMotionActive("none");
           fullGrid = true;
@@ -913,9 +1140,11 @@
         audioEnergy = getAudioEnergy();
         const smoothRate = 0.12;
         audioTideSmooth += (audioEnergy - audioTideSmooth) * smoothRate;
-        const audioTideY = audioEnergy > 0
+        const audioTideY = (audioVisMode === "tide" && audioEnergy > 0)
           ? height - audioTideSmooth * audioAmplitude * height
           : -1;
+
+        if (audioVisMode === "waveform") updateAudioSpectrum();
 
         ctx.clearRect(0, 0, width, height);
         if (!transparentBackground) {
@@ -979,6 +1208,10 @@
           }
         }
 
+        const panelOpen = !controlsPanel.classList.contains("collapsed");
+        const panelW = panelOpen ? controlsPanel.getBoundingClientRect().width : 0;
+        const visibleWidth = width - panelW;
+
         const cosA = Math.cos(angleRad);
         const sinA = Math.sin(angleRad);
 
@@ -986,6 +1219,7 @@
         const cellHeight = tileSize + gapY;
 
         const shapeImg = shapeImages[currentShape];
+        const hasAudio = !!(audioAnalyser && audioFreqData);
         let drawWidth = tileSize;
         let drawHeight = tileSize;
         if (shapeImg && isShapeReady(shapeImg)) {
@@ -1014,7 +1248,7 @@
           }
 
           let shimmerBoost = 0;
-          if (webcamMotion) {
+          if (webcamActive && webcamMotion) {
             const motionNorm = (webcamMotion[pIdxLo] || 0) / 255;
             if (motionNorm > 0.1) {
               shimmerBoost = 0.2 * motionNorm * (0.5 + 0.5 * Math.sin(time * 8 + x * 0.1 + y * 0.13));
@@ -1054,16 +1288,27 @@
           }
 
           let scaleBase = 0.5 + 0.5 * Math.sin(phase);
-          if (motionPattern === "ebb") {
-            // convert sine wave into eased 0..1 and remap to a gentle rise/fall
-            const u = (Math.sin(phase) + 1) * 0.5; // 0..1
-            const eased = u * u * (3 - 2 * u); // smoothstep
-            scaleBase = 0.4 + eased * 0.9; // 0.4..1.3
+          if (motionPattern === "none" && !hasAudio) {
+            scaleBase = 1;
+          } else if (motionPattern === "ebb") {
+            const u = (Math.sin(phase) + 1) * 0.5;
+            const eased = u * u * (3 - 2 * u);
+            scaleBase = 0.4 + eased * 0.9;
           }
           let scale = scaleBase;
           scale *= 0.3 + 0.7 * brightness;
           scale *= 1 + shimmerBoost;
-          if (audioTideY >= 0) {
+          if (audioVisMode === "waveform" && audioSpectrumSmooth) {
+            const colRatio = Math.min(1, Math.max(0, (x + cellWidth / 2) / visibleWidth));
+            const specVal = getSpectrumAt(colRatio);
+            const waveHeight = specVal * audioAmplitude * height;
+            const cellCenterY = y + cellHeight / 2;
+            const cellFromBottom = height - cellCenterY;
+            if (cellFromBottom < waveHeight) {
+              const depth = 1 - cellFromBottom / Math.max(1, waveHeight);
+              scale *= 1 + depth * 4;
+            }
+          } else if (audioTideY >= 0) {
             const cellCenterY = y + cellHeight / 2;
             const dist = Math.abs(cellCenterY - audioTideY);
             const reach = height * 0.4;
@@ -1078,6 +1323,7 @@
           const dispX = displace * Math.cos(angle) * 0.6;
           const dispY = -displace * 0.9 + Math.sin(sampleX * 0.02) * displace * 0.3;
           scale *= 1 + pathStrength * HAND_SCALE_BOOST;
+          scale = Math.min(scale, 1.0);
 
           const baseX = x + (cellWidth - drawWidth) / 2;
           const baseY = y + cellHeight;
@@ -1099,18 +1345,6 @@
             drawFallbackShape(ctx, localX, localY, tileSize);
           }
           ctx.restore();
-
-          if (showTideline) {
-            ctx.save();
-            ctx.strokeStyle = "#ffffff";
-            ctx.lineWidth = 1;
-            const lineY = Math.round(y + cellHeight) - 0.5;
-            ctx.beginPath();
-            ctx.moveTo(x, lineY);
-            ctx.lineTo(x + cellWidth, lineY);
-            ctx.stroke();
-            ctx.restore();
-          }
         };
 
         if (fullGrid) {
@@ -1222,14 +1456,23 @@
         angleDeg = Number(angleSlider.value) || 0;
         angleRad = (angleDeg * Math.PI) / 180;
         textScale = Number(textSizeSlider.value) || 1;
-        textFill = !!(textFillCheck && textFillCheck.checked);
+        textLineSpacing = Number(textLineSpacingSlider.value) || 80;
+        letterSpacingPct = Number(letterSpacingSlider.value);
+        if (Number.isNaN(letterSpacingPct)) letterSpacingPct = 0;
         alternateShapes = !!(alternateShapesCheck && alternateShapesCheck.checked);
-        spacingValue.textContent = String(gapX);
+        spacingValue.textContent = `${gapX}px`;
         sizeValue.textContent = String(tileSize);
         speedValue.textContent = tideSpeed.toFixed(2);
         frequencyValue.textContent = waveFrequency.toFixed(2);
         angleValue.textContent = `${angleDeg}°`;
-        textSizeValue.textContent = textFill ? "Fill" : `${textScale}x`;
+        textSizeValue.textContent = `${textScale}x`;
+        textLineSpacingValue.textContent = `${textLineSpacing}%`;
+        letterSpacingValue.textContent =
+          letterSpacingPct === 0 ? "0" : `${(letterSpacingPct / 100).toFixed(2)}em`;
+        if (input) {
+          input.style.letterSpacing =
+            letterSpacingPct === 0 ? "" : `${letterSpacingPct / 100}em`;
+        }
 
         updateSliderThumb(spacingSlider, spacingValue);
         updateSliderThumb(sizeSlider, sizeValue);
@@ -1237,6 +1480,8 @@
         updateSliderThumb(frequencySlider, frequencyValue);
         updateSliderThumb(angleSlider, angleValue);
         updateSliderThumb(textSizeSlider, textSizeValue);
+        updateSliderThumb(textLineSpacingSlider, textLineSpacingValue);
+        updateSliderThumb(letterSpacingSlider, letterSpacingValue);
       }
 
       function animate(timestamp) {
@@ -1281,6 +1526,21 @@
         }
       });
 
+      if (uploadFontBtn && fontFileInput) {
+        uploadFontBtn.addEventListener("click", () => fontFileInput.click());
+        fontFileInput.addEventListener("change", () => {
+          const file = fontFileInput.files && fontFileInput.files[0];
+          if (file) loadUserFontFromFile(file);
+          fontFileInput.value = "";
+        });
+      }
+      if (clearFontBtn) {
+        clearFontBtn.addEventListener("click", () => {
+          clearUserFont();
+          render(accumulatedTime);
+        });
+      }
+
       window.addEventListener("resize", () => {
         resizeCanvas();
         bgImageW = 0;
@@ -1309,12 +1569,15 @@
         render(accumulatedTime);
       });
 
-      if (textFillCheck) {
-        textFillCheck.addEventListener("change", () => {
-          updateFromControls();
-          render(accumulatedTime);
-        });
-      }
+      textLineSpacingSlider.addEventListener("input", () => {
+        updateFromControls();
+        render(accumulatedTime);
+      });
+
+      letterSpacingSlider.addEventListener("input", () => {
+        updateFromControls();
+        render(accumulatedTime);
+      });
 
       if (alternateShapesCheck) {
         alternateShapesCheck.addEventListener("change", () => {
@@ -1340,6 +1603,10 @@
         btn.addEventListener("click", () => {
           motionPattern = btn.dataset.motion;
           setMotionActive(motionPattern);
+          if (motionPattern === "none") {
+            spacingSlider.value = "0";
+            updateFromControls();
+          }
           render(accumulatedTime);
         });
       });
@@ -1417,13 +1684,21 @@
           img.onload = () => {
             bgImage = img;
             imgBrightness = 0;
-            imgContrast = 0;
             imgBrightnessSlider.value = "0";
-            imgContrastSlider.value = "0";
-            updateBgImageData(canvas.getBoundingClientRect().width, canvas.getBoundingClientRect().height);
+            imgBrightnessValue.textContent = "0";
+            updateSliderThumb(imgBrightnessSlider, imgBrightnessValue);
+            imgContrast = 100 * 2.55;
+            imgContrastSlider.value = "100";
+            imgContrastValue.textContent = "100";
+            updateSliderThumb(imgContrastSlider, imgContrastValue);
+            fullGrid = true;
+            fullGridBtn.classList.add("toggle-on");
+            motionPattern = "none";
+            setMotionActive("none");
+            const rect = canvas.getBoundingClientRect();
+            updateBgImageData(rect.width, rect.height);
             imageControlsEl.style.display = "";
             clearImageBtn.style.display = "";
-            updateFromControls();
             render(accumulatedTime);
           };
           img.src = ev.target.result;
@@ -1462,10 +1737,14 @@
         }
       });
 
-      tidelineCheck.addEventListener("change", () => {
-        showTideline = tidelineCheck.checked;
-        render(accumulatedTime);
-      });
+      if (invertImageCheck) {
+        invertImageCheck.addEventListener("change", () => {
+          if (bgImage) {
+            updateBgImageData(canvas.getBoundingClientRect().width, canvas.getBoundingClientRect().height);
+            render(accumulatedTime);
+          }
+        });
+      }
 
       uploadAudioBtn.addEventListener("click", () => audioFileInput.click());
 
@@ -1491,7 +1770,7 @@
 
         audioSource = audioCtx.createMediaElementSource(audioElement);
         audioAnalyser = audioCtx.createAnalyser();
-        audioAnalyser.fftSize = 256;
+        audioAnalyser.fftSize = 512;
         audioAnalyser.smoothingTimeConstant = Number(audioSmoothingSlider.value) / 100;
         audioFreqData = new Uint8Array(audioAnalyser.frequencyBinCount);
 
@@ -1504,14 +1783,38 @@
 
         audioControlsEl.style.display = "";
         clearAudioBtn.style.display = "";
-        audioPlayBtn.textContent = "Play";
+
+        fullGrid = true;
+        fullGridBtn.classList.add("toggle-on");
 
         motionPattern = "none";
         setMotionActive("none");
-        audioSmoothingSlider.value = "99";
-        audioSmoothingValue.textContent = "99";
-        if (audioAnalyser) audioAnalyser.smoothingTimeConstant = 0.99;
+
+        audioVisMode = "waveform";
+        audioSpectrumSmooth = null;
+        audioVisBtns.forEach((b) => b.classList.toggle("toggle-on", b.dataset.vis === "waveform"));
+
+        audioVolumeSlider.value = "50";
+        audioVolumeValue.textContent = "50";
+        if (audioGain) audioGain.gain.value = 0.5;
+        updateSliderThumb(audioVolumeSlider, audioVolumeValue);
+
+        audioAmplitude = 2.0;
+        audioAmpSlider.value = "200";
+        audioAmpValue.textContent = "200";
+        updateSliderThumb(audioAmpSlider, audioAmpValue);
+
+        audioSmoothingSlider.value = "85";
+        audioSmoothingValue.textContent = "85";
+        if (audioAnalyser) audioAnalyser.smoothingTimeConstant = 0.85;
         updateSliderThumb(audioSmoothingSlider, audioSmoothingValue);
+
+        audioBand = "all";
+        audioBandBtns.forEach((b) => b.classList.toggle("toggle-on", b.dataset.band === "all"));
+
+        if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+        audioElement.play();
+        audioPlayBtn.textContent = "Pause";
 
         audioFileInput.value = "";
       });
@@ -1524,6 +1827,7 @@
         audioFreqData = null;
         audioEnergy = 0;
         audioTideSmooth = 0;
+        audioSpectrumSmooth = null;
         audioControlsEl.style.display = "none";
         clearAudioBtn.style.display = "none";
         render(accumulatedTime);
@@ -1565,6 +1869,14 @@
         audioSmoothingValue.textContent = audioSmoothingSlider.value;
         updateSliderThumb(audioSmoothingSlider, audioSmoothingValue);
         if (audioAnalyser) audioAnalyser.smoothingTimeConstant = v;
+      });
+
+      const audioVisBtns = document.querySelectorAll(".audio-vis-btn");
+      audioVisBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          audioVisMode = btn.dataset.vis;
+          audioVisBtns.forEach((b) => b.classList.toggle("toggle-on", b.dataset.vis === audioVisMode));
+        });
       });
 
       audioBandBtns.forEach((btn) => {
@@ -1618,19 +1930,21 @@
       ];
 
       resetBtn.addEventListener("click", () => {
-        input.value = "T";
-        tileSize = 42;
+        clearUserFont();
+        input.value = DEFAULT_TEXT;
+        tileSize = 17;
         gapX = gapY = 0;
         tideSpeed = 0.50;
         motionPattern = "crest";
         waveFrequency = 0.15;
         angleDeg = 0;
         textScale = 10;
-        textFill = false;
-        alternateShapes = false;
+        textLineSpacing = 80;
+        letterSpacingPct = 0;
+        alternateShapes = true;
         transparentBackground = false;
         fullGrid = false;
-        currentShape = "surge";
+        currentShape = "barrel";
         isPaused = false;
         pauseBtn.textContent = "Pause";
         spacingSlider.value = String(gapX);
@@ -1639,13 +1953,14 @@
         frequencySlider.value = String(waveFrequency * 100);
         angleSlider.value = String(angleDeg);
         textSizeSlider.value = String(textScale);
-        if (textFillCheck) textFillCheck.checked = false;
-        if (alternateShapesCheck) alternateShapesCheck.checked = false;
+        textLineSpacingSlider.value = String(textLineSpacing);
+        letterSpacingSlider.value = String(letterSpacingPct);
+        if (alternateShapesCheck) alternateShapesCheck.checked = true;
         if (transparentBgCheck) transparentBgCheck.checked = false;
         setMotionActive(motionPattern);
         fullGridBtn.classList.remove("toggle-on");
         document.querySelectorAll(".shape-btn").forEach((b) =>
-          b.classList.toggle("toggle-on", b.dataset.shape === "surge")
+          b.classList.toggle("toggle-on", b.dataset.shape === "barrel")
         );
         bgImage = null;
         bgImageData = null;
@@ -1655,6 +1970,7 @@
         imgContrast = 0;
         imgBrightnessSlider.value = "0";
         imgContrastSlider.value = "0";
+        if (invertImageCheck) invertImageCheck.checked = false;
         imageControlsEl.style.display = "none";
         clearImageBtn.style.display = "none";
         if (audioElement) { audioElement.pause(); audioElement.remove(); audioElement = null; }
@@ -1664,18 +1980,25 @@
         audioFreqData = null;
         audioEnergy = 0;
         audioTideSmooth = 0;
-        audioAmplitude = 0.5;
+        audioAmplitude = 2.0;
         audioBand = "all";
         audioLooping = false;
-        audioVolumeSlider.value = "80";
-        audioAmpSlider.value = "50";
-        audioSmoothingSlider.value = "75";
+        audioVolumeSlider.value = "50";
+        audioVolumeValue.textContent = "50";
+        updateSliderThumb(audioVolumeSlider, audioVolumeValue);
+        audioAmpSlider.value = "200";
+        audioAmpValue.textContent = "200";
+        updateSliderThumb(audioAmpSlider, audioAmpValue);
+        audioSmoothingSlider.value = "85";
+        audioSmoothingValue.textContent = "85";
+        updateSliderThumb(audioSmoothingSlider, audioSmoothingValue);
         audioControlsEl.style.display = "none";
         clearAudioBtn.style.display = "none";
+        audioVisMode = "waveform";
+        audioSpectrumSmooth = null;
         audioLoopBtn.classList.remove("toggle-on");
         audioBandBtns.forEach((b) => b.classList.toggle("toggle-on", b.dataset.band === "all"));
-        showTideline = false;
-        tidelineCheck.checked = false;
+        audioVisBtns.forEach((b) => b.classList.toggle("toggle-on", b.dataset.vis === "waveform"));
         if (webcamActive) {
           toggleWebcam();
         }
@@ -1688,20 +2011,20 @@
       randomiseBtn.addEventListener("click", () => {
         const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
         const preferNarrow = Math.random() < 10 / 11; // 10x more likely: narrow range
-        const spacing = preferNarrow ? randInt(0, 10) : randInt(0, 30);
+        const spacing = preferNarrow ? randInt(0, 10) : randInt(0, 20);
         const size = preferNarrow ? randInt(8, 20) : randInt(8, 40);
         input.value = randomTextOptions[randInt(0, randomTextOptions.length - 1)];
         spacingSlider.value = String(spacing);
         sizeSlider.value = String(size);
         textSizeSlider.value = String(randInt(3, 10));
-        if (textFillCheck) textFillCheck.checked = true;
         speedSlider.value = String(randInt(0, 200));
         frequencySlider.value = String(randInt(5, 200));
         angleSlider.value = String(randInt(0, 360));
         const motions = ["ebb", "flow", "swell", "crest", "surge", "storm", "none"];
         motionPattern = motions[randInt(0, motions.length - 1)];
         setMotionActive(motionPattern);
-        currentShape = SHAPE_KEYS[randInt(0, SHAPE_KEYS.length - 1)];
+        const pickKeys = visibleShapeKeys();
+        currentShape = pickKeys[randInt(0, pickKeys.length - 1)];
         shapeBtns.forEach((b) => b.classList.toggle("toggle-on", b.dataset.shape === currentShape));
         if (alternateShapesCheck) alternateShapesCheck.checked = Math.random() < 0.5;
         updateFromControls();
@@ -1731,19 +2054,21 @@
       // Initial setup
       window.addEventListener("load", () => {
         resizeCanvas();
-        input.value = "T";
+        input.value = DEFAULT_TEXT;
         setMotionActive(motionPattern);
         spacingSlider.value = String(gapX);
         sizeSlider.value = String(tileSize);
         textSizeSlider.value = String(textScale);
-        textFill = !!(textFillCheck && textFillCheck.checked);
+        textLineSpacingSlider.value = String(textLineSpacing);
+        letterSpacingSlider.value = String(letterSpacingPct);
         speedSlider.value = String(tideSpeed * 100);
         frequencySlider.value = String(waveFrequency * 100);
         angleSlider.value = String(angleDeg);
-        updateFromControls();
         attachSmoothSlider(spacingSlider, spacingValue);
         attachSmoothSlider(sizeSlider, sizeValue);
         attachSmoothSlider(textSizeSlider, textSizeValue);
+        attachSmoothSlider(textLineSpacingSlider, textLineSpacingValue);
+        attachSmoothSlider(letterSpacingSlider, letterSpacingValue);
         attachSmoothSlider(speedSlider, speedValue);
         attachSmoothSlider(frequencySlider, frequencyValue);
         attachSmoothSlider(angleSlider, angleValue);
@@ -1752,7 +2077,14 @@
         attachSmoothSlider(audioVolumeSlider, audioVolumeValue);
         attachSmoothSlider(audioAmpSlider, audioAmpValue);
         attachSmoothSlider(audioSmoothingSlider, audioSmoothingValue);
-        requestAnimationFrame(animate);
+        audioAmplitude = Number(audioAmpSlider.value) / 100;
+        requestAnimationFrame(() => {
+          updateFromControls();
+          updateSliderThumb(audioVolumeSlider, audioVolumeValue);
+          updateSliderThumb(audioAmpSlider, audioAmpValue);
+          updateSliderThumb(audioSmoothingSlider, audioSmoothingValue);
+          requestAnimationFrame(animate);
+        });
       });
     </script>
   </body>
